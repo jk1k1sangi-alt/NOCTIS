@@ -1,0 +1,440 @@
+/* ==========================================================================
+   NOCTIS — The Register
+   Continuity layer: spine · folio bar · index · handoff · acquisition · flip
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ 01
+   SPINE — the reader's position in the register, held in the gutter
+   ------------------------------------------------------------------ */
+.spine {
+  position: fixed;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  width: 34px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  pointer-events: none;
+}
+.spine > * { pointer-events: auto; }
+
+.spine__index {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  color: var(--t-quaternary);
+  border: 1px solid transparent;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.spine__index:hover { color: var(--n-champagne); border-color: var(--line-gold); }
+
+/* The folio numeral, set like a pressed seal on the page edge */
+.spine__marker {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line-strong);
+  background: rgba(5, 5, 6, 0.55);
+  backdrop-filter: blur(8px);
+  transition: transform var(--dur) var(--ease-out);
+}
+.spine__numeral {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  color: var(--n-champagne);
+}
+
+.spine__track {
+  position: relative;
+  width: 1px;
+  height: clamp(150px, 26vh, 250px);
+  background: var(--line);
+}
+.spine__fill {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, var(--n-champagne-deep), var(--n-champagne));
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 0.12s linear;
+}
+.spine__stop {
+  position: absolute; left: 50%;
+  width: 7px; height: 7px;
+  margin-left: -3.5px; margin-top: -3.5px;
+  border: 1px solid var(--line-strong);
+  background: var(--n-void);
+  border-radius: 50%;
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast);
+}
+.spine__stop:hover { border-color: var(--n-champagne); transform: scale(1.5); }
+.spine__stop.is-current { background: var(--n-champagne); border-color: var(--n-champagne); }
+
+.spine__caption {
+  writing-mode: vertical-rl;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--t-quaternary);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ 02
+   FOLIO BAR — the compact spine, for narrow gutters
+   ------------------------------------------------------------------ */
+.folio-bar {
+  display: none;                 /* the spine serves desktop; see responsive */
+  position: fixed;
+  top: calc(var(--nav-h) + var(--acq-h, 0px));
+  left: 0; right: 0;
+  z-index: 88;
+  height: 0;
+  overflow: hidden;
+  background: rgba(9, 9, 11, 0.86);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line-soft);
+  transition: height var(--dur) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+  opacity: 0;
+}
+.folio-bar.is-visible { height: 38px; opacity: 1; }
+.folio-bar__fill {
+  position: absolute; left: 0; bottom: 0;
+  width: 100%; height: 1px;
+  background: var(--n-champagne);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.folio-bar__btn {
+  width: 100%; height: 38px;
+  padding-inline: var(--gutter);
+  display: flex; align-items: center; gap: 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--t-tertiary);
+  transition: color var(--dur-fast);
+}
+.folio-bar__btn:hover { color: var(--t-primary); }
+.folio-bar__label { color: var(--n-champagne); }
+.folio-bar__sep { width: 14px; height: 1px; background: var(--line-strong); }
+.folio-bar__title { color: var(--t-secondary); }
+.folio-bar__icon { margin-left: auto; opacity: 0.6; }
+
+/* ------------------------------------------------------------------ 03
+   INDEX — the whole story, opened at once
+   ------------------------------------------------------------------ */
+.overlay--journey { align-items: flex-start; }
+.journey { width: 100%; max-width: 1040px; margin-inline: auto; }
+.journey__head { max-width: 62ch; }
+.journey__progress {
+  display: flex; align-items: center; gap: 1.25rem;
+  margin-top: 2rem; color: var(--t-tertiary);
+}
+.journey__bar {
+  flex: 1; max-width: 220px; height: 1px;
+  background: var(--line); position: relative; overflow: hidden;
+}
+.journey__bar i {
+  position: absolute; inset: 0;
+  background: var(--n-champagne);
+  transform-origin: left;
+  transition: transform 1s var(--ease-out);
+}
+
+.journey__list {
+  margin-top: clamp(2.5rem, 5vh, 4rem);
+  border-top: 1px solid var(--line);
+  counter-reset: folio;
+}
+.journey__item { border-bottom: 1px solid var(--line-soft); }
+.journey__item a {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: baseline;
+  padding: clamp(1.25rem, 2.4vw, 1.9rem) 0;
+  transition: padding-left var(--dur) var(--ease-out), border-color var(--dur-fast);
+}
+.journey__item a:hover { padding-left: 0.9rem; }
+.journey__item.is-current a { border-left: 1px solid var(--n-champagne); padding-left: 1.1rem; }
+
+.journey__num {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+  font-weight: 300;
+  color: var(--t-quaternary);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.journey__item.is-current .journey__num,
+.journey__item.is-read .journey__num { color: var(--n-champagne); }
+
+.journey__body { display: block; }
+.journey__title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2.3rem);
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--t-primary);
+}
+.journey__note {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--t-tertiary);
+}
+.journey__lead {
+  display: block;
+  margin-top: 0.75rem;
+  max-width: 48ch;
+  font-size: 0.875rem;
+  color: var(--t-secondary);
+  line-height: 1.65;
+}
+.journey__state {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--t-quaternary);
+  white-space: nowrap;
+}
+.journey__item.is-current .journey__state { color: var(--n-champagne); }
+.journey__item.is-read:not(.is-current) .journey__state { color: var(--n-jade); }
+
+.journey__foot {
+  margin-top: clamp(2rem, 4vh, 3rem);
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line-soft);
+}
+.journey__appendices { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.journey__appendices a {
+  font-size: var(--fs-small);
+  color: var(--t-secondary);
+  transition: color var(--dur-fast);
+}
+.journey__appendices a:hover { color: var(--n-champagne); }
+
+/* ------------------------------------------------------------------ 04
+   FOLIO HEAD — every page opens by naming its place in the register
+   ------------------------------------------------------------------ */
+.folio-head {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.85rem, 2vw, 1.5rem);
+  padding-bottom: 1.1rem;
+  margin-bottom: clamp(1.75rem, 3.5vw, 2.75rem);
+  border-bottom: 1px solid var(--line-soft);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+}
+.folio-head__num { color: var(--n-champagne); }
+.folio-head__rule { width: 22px; height: 1px; background: var(--line-strong); }
+.folio-head__title { color: var(--t-secondary); }
+.folio-head__meta { margin-left: auto; color: var(--t-quaternary); }
+.folio-head__meta a { color: var(--t-tertiary); border-bottom: 1px solid var(--line); }
+.folio-head__meta a:hover { color: var(--n-champagne); border-color: var(--line-gold); }
+
+/* In-document folio divider — marks a chapter inside a page */
+.folio-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-block: clamp(2.5rem, 6vh, 4.5rem);
+  border-top: 1px solid var(--line-soft);
+}
+.folio-divider__num {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--t-quaternary);
+  flex: 0 0 auto;
+}
+.folio-divider__rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-gold), transparent); }
+.folio-divider__body { flex: 0 0 auto; text-align: right; }
+.folio-divider__title { font-family: var(--font-display); font-size: clamp(1.1rem, 2vw, 1.5rem); }
+.folio-divider__meta {
+  font-family: var(--font-mono); font-size: 0.5625rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--t-quaternary); margin-top: 0.4rem;
+}
+
+/* ------------------------------------------------------------------ 05
+   HANDOFF — every page closes by naming the next folio
+   ------------------------------------------------------------------ */
+.handoff {
+  position: relative;
+  border-top: 1px solid var(--line);
+  padding-block: clamp(3rem, 7vh, 5.5rem);
+  overflow: hidden;
+}
+.handoff__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(1.75rem, 5vw, 5rem);
+  align-items: end;
+}
+.handoff__kicker { display: flex; align-items: center; gap: 0.9rem; }
+.handoff__rule { width: 34px; height: 1px; background: var(--n-champagne); }
+.handoff__num {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--t-primary);
+  margin-top: 1.1rem;
+}
+.handoff__title { margin-top: 1.25rem; max-width: 20ch; }
+.handoff__copy { margin-top: 1.25rem; max-width: 46ch; color: var(--t-secondary); }
+.handoff__actions { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-top: 2rem; }
+/* A restrained folio numeral, set against the kicker rather than as a
+   billboard — the footer's wordmark owns the oversized letterform. */
+.handoff__num {
+  position: relative;
+  padding-left: 0;
+}
+.handoff__num::after {
+  content: '';
+  display: block;
+  width: 46px; height: 1px;
+  margin-top: 1.5rem;
+  background: linear-gradient(90deg, var(--line-gold), transparent);
+}
+.handoff { padding-bottom: clamp(4rem, 9vh, 7rem); }
+
+/* ------------------------------------------------------------------ 06
+   ACQUISITION PATH — the commercial movement of the same story
+   ------------------------------------------------------------------ */
+.acq {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 42;
+  background: rgba(9, 9, 11, 0.8);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-bottom: 1px solid var(--line-soft);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+.acq.is-live { opacity: 1; }
+.acq__inner {
+  position: relative;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding: 1rem var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+.acq__label {
+  flex: 0 0 auto;
+  color: var(--t-quaternary);
+  padding-right: clamp(0.75rem, 2vw, 1.75rem);
+  border-right: 1px solid var(--line-soft);
+}
+.acq__steps { display: flex; align-items: center; gap: clamp(0.85rem, 2.6vw, 2.25rem); flex-wrap: wrap; }
+.acq__step {
+  display: flex; align-items: center; gap: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t-quaternary);
+  transition: color var(--dur-fast);
+}
+.acq__step a { display: flex; align-items: center; gap: 0.55rem; }
+.acq__step a:hover { color: var(--t-primary); }
+.acq__step.is-done { color: var(--t-tertiary); }
+.acq__step.is-done a { color: var(--t-tertiary); }
+.acq__step.is-current { color: var(--n-champagne); }
+.acq__num {
+  display: grid; place-items: center;
+  width: 20px; height: 20px;
+  border: 1px solid var(--line);
+  font-size: 0.5rem;
+}
+.acq__step.is-current .acq__num { border-color: var(--n-champagne); }
+.acq__step.is-done .acq__num { border-color: var(--n-jade); color: var(--n-jade); }
+.acq__fill {
+  position: absolute; left: 0; bottom: -1px;
+  height: 1px;
+  width: calc(100% * var(--acq, 0));
+  background: var(--n-champagne);
+  transition: width 1.2s var(--ease-out);
+}
+
+/* ------------------------------------------------------------------ 07
+   CONTINUITY — the product image crosses the page break
+   ------------------------------------------------------------------ */
+.continuity-ghost {
+  position: fixed;
+  z-index: 245;                 /* beneath the curtain (250) so it lands clean */
+  object-fit: cover;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  opacity: 0;                   /* set to 0.999 on flight so the transition runs */
+  border: 1px solid var(--line-soft);
+  background: var(--n-onyx);
+}
+
+/* The destination stage holds its breath until the frame arrives */
+.pdp__stage.is-continued img { animation: continuedIn 0.9s var(--ease-out) both; }
+@keyframes continuedIn {
+  from { opacity: 0; transform: scale(1.015); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* A link that will carry its image across the break */
+[data-continuity] { cursor: pointer; }
+
+/* ------------------------------------------------------------------ 08
+   RESPONSIVE
+   ------------------------------------------------------------------ */
+@media (min-width: 1280px) {
+  .spine { display: flex; }
+  /* the spine lives in the gutter, so the document shifts to clear it */
+  body { --gutter: clamp(3.25rem, 5.5vw, 6rem); }
+}
+@media (max-width: 1279px) {
+  .folio-bar { display: block; }
+  /* the spine becomes a compact marker only, cleared of the content gutter */
+  body { --gutter: clamp(1.25rem, 5vw, 5.5rem); }
+}
+
+@media (max-width: 1024px) {
+  .handoff__grid { grid-template-columns: 1fr; gap: 2rem; }
+  .acq__label { display: none; }
+}
+@media (max-width: 760px) {
+  .journey__item a { grid-template-columns: 44px minmax(0, 1fr); gap: 1rem; }
+  .journey__state { grid-column: 2; margin-top: 0.6rem; }
+  .manual-hide { }
+  .acq__steps { gap: 0.85rem; }
+  .acq__step { font-size: 0.5rem; letter-spacing: 0.12em; }
+  .acq__num { width: 17px; height: 17px; }
+  .folio-head { font-size: 0.5rem; letter-spacing: 0.16em; }
+  .folio-head__meta { margin-left: 0; flex-basis: 100%; }
+  .folio-divider__body { text-align: left; flex-basis: 100%; }
+  .folio-divider { flex-wrap: wrap; gap: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spine, .folio-bar, .acq { transition: none; }
+  .continuity-ghost { display: none; }
+  .pdp__stage.is-continued img { animation: none; }
+}
+
+/* Sticky stacking order: nav → acquisition path → folio bar → filter bar.
+   Each publishes its height so nothing ever fights for the same slot. */
+.filter-bar {
+  top: calc(var(--nav-h) + var(--acq-h, 0px) + var(--folio-h, 0px));
+}
